@@ -6,23 +6,8 @@ import argparse
 import sys
 import os
 import fnmatch
-import subprocess
+import rtl_runner
 import json
-
-
-def run_rtl433(input_fn, samplerate=None, protocol=None, rtl_433_cmd="rtl_433"):
-    """Run rtl_433 and return output."""
-    args = ['-c', '0', '-M', 'newmodel']
-    if protocol:
-        args.extend(['-R', str(protocol)])
-    if samplerate:
-        args.extend(['-s', str(samplerate)])
-    args.extend(['-F', 'json', '-r', input_fn])
-    cmd = [rtl_433_cmd] + args
-    # print(" ".join(cmd))
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    return (out, err, p.returncode)
 
 
 def convert(root, filename, rtl_path):
@@ -56,7 +41,7 @@ def convert(root, filename, rtl_path):
         old_data = output_file.read().splitlines()
 
     # Run rtl_433
-    out, _err, exitcode = run_rtl433(input_fn, samplerate, protocol, rtl_path)
+    out, _err, exitcode = rtl_runner.run(input_fn, samplerate, protocol, rtl_path)
 
     if exitcode:
         print("ERROR: Exited with %d '%s'" % (exitcode, input_fn))

@@ -7,29 +7,10 @@ import os
 import argparse
 
 import fnmatch
-import subprocess
+import rtl_runner
 import json
 
 from deepdiff import DeepDiff
-
-
-def run_rtl433(input_fn, samplerate=None, protocol=None, rtl_433_cmd="rtl_433"):
-    """Run rtl_433 and return output."""
-    args = ['-c', '0', '-M', 'newmodel']
-    if protocol:
-        args.extend(['-R', str(protocol)])
-    if samplerate:
-        args.extend(['-s', str(samplerate)])
-    args.extend(['-F', 'json', '-r', input_fn])
-    cmd = [rtl_433_cmd] + args
-    # print(" ".join(cmd))
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    # Pass warning messages through
-    for line in err.split("\n"):
-        if "WARNING:" in line:
-            print(line)
-    return (out, err, p.returncode)
 
 
 def find_json():
@@ -106,7 +87,7 @@ def main():
             expected_data = remove_fields(expected_data, ignore_fields)
 
         # Run rtl_433
-        rtl433out, _err, exitcode = run_rtl433(input_fn, samplerate,
+        rtl433out, _err, exitcode = rtl_runner.run(input_fn, samplerate,
                                                protocol, rtl_433_cmd)
 
         if exitcode:

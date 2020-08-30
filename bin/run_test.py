@@ -50,6 +50,7 @@ def main():
     expected_json = find_json()
     nb_ok = 0
     nb_fail = 0
+    false_positives = dict()
     for output_fn in expected_json:
         input_fn = os.path.splitext(output_fn)[0] + ".cu8"
         if not os.path.isfile(input_fn):
@@ -105,7 +106,14 @@ def main():
                     expected_model = expected_data[0]["model"]
                     actual_model = data["model"]
                     if actual_model != expected_model:
-                        print(f"WARNING: false positive, expected {expected_model}, got {actual_model}")
+                        if actual_model not in false_positives:
+                            false_positives[actual_model] = dict()
+                            false_positives[actual_model]["count"] = 1
+                            false_positives[actual_model]["models"] = set()
+                            false_positives[actual_model]["models"].add(expected_model)
+                        else:
+                            false_positives[actual_model]["count"]  += 1
+                            false_positives[actual_model]["models"].add(expected_model)
                         continue
                 results.append(data)
             except ValueError:
@@ -136,6 +144,11 @@ def main():
             print("  But got: " + str(results))
         else:
             nb_ok += 1
+
+    for model, values in false_positives.items():
+        count = values["count"]
+        models = values["models"]
+        print(f"WARNING: {model} generated {count} false positive(s) in other decoders: {models}")
 
     # print some summary
     print("%d records tested, %d have failed" % (nb_ok+nb_fail, nb_fail))

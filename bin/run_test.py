@@ -100,7 +100,14 @@ def main():
             if not json_line.strip():
                 continue
             try:
-                results.append(json.loads(json_line))
+                data = json.loads(json_line)
+                if "model" in data:
+                    expected_model = expected_data[0]["model"]
+                    actual_model = data["model"]
+                    if actual_model != expected_model:
+                        print(f"WARNING: false positive, expected {expected_model}, got {actual_model}")
+                        continue
+                results.append(data)
             except ValueError:
                 nb_fail += 1
                 # TODO: factorise error print

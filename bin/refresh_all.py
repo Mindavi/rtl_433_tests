@@ -9,6 +9,17 @@ import fnmatch
 import rtl_runner
 import json
 
+def matches_model(expected_model, data):
+    try:
+        decoded = json.loads(data)
+        if decoded["model"] == expected_model:
+            return True
+    # TODO: what exceptions can we expect?
+    except e:
+        print("ERROR: exception:", e)
+        pass
+    return False
+
 
 def convert(root, filename, rtl_path):
     output_fn = os.path.join(root, filename)
@@ -40,6 +51,14 @@ def convert(root, filename, rtl_path):
     with open(output_fn, "r") as output_file:
         old_data = output_file.read().splitlines()
 
+    expected_model = None
+    if len(old_data) > 0:
+        try:
+            line = json.loads(old_data[0])
+            expected_model = line["model"]
+        except e:
+            print(e)
+
     # Run rtl_433
     out, _err, exitcode = rtl_runner.run(input_fn, samplerate, protocol, rtl_path)
 
@@ -49,6 +68,16 @@ def convert(root, filename, rtl_path):
     # get JSON results
     out = out.decode('ascii')
     new_data = out.splitlines()
+
+    new_data_without_false_positives = []
+    if expected_model:
+        for item in new_data:
+            if matches_model(expected_model, item):
+                new_data_without_false_positives.append(item)
+            else:
+                print(f"WARNING: false positive, expected: {expected_model}, got {item}")
+    if len(new_data_without_false_positives) > 0:
+        new_data = new_data_without_false_positives
 
     if len(old_data) != len(new_data):
         print("\nWARNING: Different data for '%s'" % (input_fn))
